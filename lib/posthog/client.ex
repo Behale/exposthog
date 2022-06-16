@@ -1,8 +1,26 @@
 defmodule Posthog.Client do
   @moduledoc false
 
+  def capture(event, distinct_id, set_params, set_once_params, timestamp) when (is_bitstring(event) or is_atom(event)) and is_bitstring(distinct_id) do
+    params = [
+      distinct_id: distinct_id,
+      "$set": set_params,
+      "$set_once": set_once_params,
+    ]
+
+    body = build_event(event, params, timestamp)
+
+    post!("/capture", body)
+  end
+
   def capture(event, params, timestamp) when is_bitstring(event) or is_atom(event) do
     body = build_event(event, params, timestamp)
+
+    post!("/capture", body)
+  end
+
+  def identify(distinct_id, timestamp) when is_bitstring(distinct_id) do
+    body = build_event("$identify", [distinct_id: distinct_id], timestamp)
 
     post!("/capture", body)
   end
@@ -26,6 +44,7 @@ defmodule Posthog.Client do
     body =
       body
       |> Map.put(:api_key, api_key())
+      |> add_metadata()
       |> json_library().encode!()
 
     api_url()
@@ -33,6 +52,11 @@ defmodule Posthog.Client do
     |> URI.to_string()
     |> :hackney.post([{"Content-Type", "application/json"}], body)
     |> handle()
+  end
+
+  defp add_metadata(body, _metadata) do
+    body
+    |> Map.put(:env, Mix.env())
   end
 
   @spec handle(tuple()) :: {:ok, term()} | {:error, term()}
