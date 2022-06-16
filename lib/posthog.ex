@@ -26,13 +26,10 @@ defmodule Posthog do
   @typep result() :: {:ok, term()} | {:error, term()}
   @typep timestamp() :: DateTime.t() | NaiveDateTime.t() | String.t() | nil
 
-  @spec capture(atom() | String.t(), String.t(), map(), map(), timestamp()) :: result()
-  defdelegate capture(event, distinct_id, set_params \\ %{}, set_once_parms \\ %{}, timestamp \\ nil), to: Posthog.Client
+  @spec capture(atom() | String.t(), map() | String.t(), Keyword.t() | map(), Keyword.t() | map(), timestamp()) :: result()
+  defdelegate capture(event, event_params_or_distinct_id, set_params \\ %{}, set_once_parms \\ %{}, timestamp \\ nil), to: Posthog.Client
 
-  @spec capture(atom() | String.t(), keyword() | map(), timestamp()) :: result()
-  defdelegate capture(event, params, timestamp \\ nil), to: Posthog.Client
-
-  @spec identify(String.t(), keyword() | map(), timestamp()) :: result()
+  @spec identify(String.t(), timestamp()) :: result()
   defdelegate identify(distinct_id, timestamp \\ nil), to: Posthog.Client
 
   @spec batch(list(tuple())) :: result()

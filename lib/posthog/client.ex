@@ -1,19 +1,16 @@
 defmodule Posthog.Client do
   @moduledoc false
 
-  def capture(event, distinct_id, set_params, set_once_params, timestamp) when (is_bitstring(event) or is_atom(event)) and is_bitstring(distinct_id) do
-    params = [
-      distinct_id: distinct_id,
-      "$set": set_params,
-      "$set_once": set_once_params,
-    ]
-
-    body = build_event(event, params, timestamp)
-
-    post!("/capture", body)
+  def capture(event, distinct_id, set_person_params, set_once_person_params, timestamp) when is_bitstring(distinct_id) do
+    capture(event, %{distinct_id: distinct_id}, set_person_params, set_once_person_params, timestamp)
   end
 
-  def capture(event, params, timestamp) when is_bitstring(event) or is_atom(event) do
+  def capture(event, event_params, set_person_params, set_once_person_params, timestamp) when is_map(event_params) do
+    params =
+      event_params
+      |> Map.put(:"$set", set_person_params)
+      |> Map.put(:"$set_once", set_once_person_params)
+
     body = build_event(event, params, timestamp)
 
     post!("/capture", body)
@@ -37,14 +34,17 @@ defmodule Posthog.Client do
   end
 
   defp build_event(event, properties, timestamp) do
-    %{event: to_string(event), properties: Map.new(properties), timestamp: timestamp}
+    %{
+      event: to_string(event),
+      properties: properties |> Map.new() |> add_metadata(),
+      timestamp: timestamp
+    }
   end
 
   defp post!(path, %{} = body) do
     body =
       body
       |> Map.put(:api_key, api_key())
-      |> add_metadata()
       |> json_library().encode!()
 
     api_url()
@@ -54,9 +54,13 @@ defmodule Posthog.Client do
     |> handle()
   end
 
-  defp add_metadata(body, _metadata) do
-    body
-    |> Map.put(:env, Mix.env())
+  defp add_metadata(properties, _metadata \\ %{}) do
+    properties
+    |> Map.update!(:"$set", &
+      &1
+      |> Map.new()
+      |> Map.put(:env, System.get_env("RELEASE_LEVEL") || Mix.env())
+    )
   end
 
   @spec handle(tuple()) :: {:ok, term()} | {:error, term()}
@@ -84,7 +88,7 @@ defmodule Posthog.Client do
   end
 
   defp api_url() do
-    case Application.get_env(:posthog, :api_url) do
+    case Application.get_env(:exposthog, :api_url) do
       url when is_bitstring(url) ->
         url
 
@@ -93,7 +97,7 @@ defmodule Posthog.Client do
         Expected a string API URL, got: #{inspect(term)}. Set a
         URL and key in your config:
 
-            config :posthog,
+            config :exposthog,
               api_url: "https://posthog.example.com",
               api_key: "my-key"
         """
@@ -101,7 +105,7 @@ defmodule Posthog.Client do
   end
 
   defp api_key() do
-    case Application.get_env(:posthog, :api_key) do
+    case Application.get_env(:exposthog, :api_key) do
       key when is_bitstring(key) ->
         key
 
@@ -110,7 +114,7 @@ defmodule Posthog.Client do
         Expected a string API key, got: #{inspect(term)}. Set a
         URL and key in your config:
 
-            config :posthog,
+            config :exposthog,
               api_url: "https://posthog.example.com",
               api_key: "my-key"
         """

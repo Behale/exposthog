@@ -3,9 +3,9 @@ defmodule Posthog.MixProject do
 
   def project do
     [
-      app: :posthog,
-      version: "0.1.0",
-      elixir: "~> 1.8",
+      app: :exposthog,
+      version: "0.1.1",
+      elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
@@ -27,9 +27,9 @@ defmodule Posthog.MixProject do
     [
       name: :posthog,
       files: ["lib", "mix.exs", "README.md", "LICENSE"],
-      maintainers: ["Nick Kezhaya"],
+      maintainers: ["Nick Kezhaya", "Rafael Ballestiero"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/whitepaperclip/posthog"}
+      links: %{"GitHub" => "https://github.com/Behale/exposthog"}
     ]
   end
 
